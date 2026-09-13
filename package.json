@@ -1,0 +1,22 @@
+{
+  "name": "vivacada",
+  "version": "2.0.0",
+  "description": "Vivacada — human-proctored, AI-interviewed credentialing. Runs as the open-source testing kiosk, the hosted aggregator, or the hosted AI-proctored testing service, chosen by APP_MODE.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:testing": "cross-env APP_MODE=testing node server.js",
+    "start:aggregator": "cross-env APP_MODE=aggregator node server.js",
+    "start:ai-testing": "cross-env APP_MODE=ai-testing node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.629.0",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.8.0",
+    "stripe": "^16.8.0"
+  },
+  "devDependencies": { "cross-env": "^7.0.3" }
+}

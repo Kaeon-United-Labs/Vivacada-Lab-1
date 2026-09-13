@@ -1,0 +1,6 @@
+node_modules/
+data/
+aggregator/data/
+testing-app/data/
+.env
+*.log

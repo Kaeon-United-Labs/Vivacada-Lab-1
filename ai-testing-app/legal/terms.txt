@@ -1,0 +1,100 @@
+VIVACADA AI-PROCTORED EXAM — TERMS OF USE
+
+Last updated: [DATE]
+
+[Operator note: this is a static file, not templated. If you change
+ATTEMPT_FEE_CENTS from its $10.00 default, update the amount in section 3
+below to match.]
+
+Please read this in full before paying or beginning an attempt. By checking
+the agreement box and paying, you accept every term below.
+
+1. ADULTS ONLY
+This service is available to adults (18 years or older) only. Do not use
+this service if you are under 18. Vivacada offers other, human-proctored
+testing options through partner institutions that may be available to
+minors; this AI-proctored path is not one of them.
+
+2. NO HUMAN INVOLVEMENT
+Every part of this specific exam path — writing your interview questions,
+grading your answers, and reviewing your recording afterward — is performed
+by automated systems. No Vivacada staff member or any other human reviews
+your exam content or your footage at any point, including if your attempt
+is rejected. If you want a human-proctored exam instead, look for a
+participating institution on Vivacada's site.
+
+3. FEE AND PAYMENT
+Each attempt costs $10.00 and is charged before your session begins. This
+fee is the same whether it is your first attempt or a retry after a
+rejection. Payment is not refundable for any reason, including a rejection
+you believe was incorrect, a rejection caused by a system or technical
+failure rather than anything you did, or simply changing your mind partway
+through.
+
+4. WHAT "REJECTED" MEANS AND WHAT HAPPENS NEXT
+After you submit your exam, an automated system reviews your recording. It
+checks, among other things, that a real face is visible, that a legible
+government-issued photo ID was shown and its photo matches your face, that
+you performed the requested gestures, and that your surroundings and
+conduct during the exam appear legitimate. If any of these checks fails,
+your attempt is rejected: none of your exam content or personal
+information is sent to Vivacada, and you are told only that the attempt
+was not approved, not the specific reason. If the system is unable to
+complete this review after a limited number of attempts due to a technical
+problem on our end, your attempt is also treated as unsuccessful under
+this same policy. Either way, trying again requires paying the fee again.
+
+5. THE AI CAN BE WRONG
+Automated proctoring is not perfect. It may reject a legitimate attempt by
+mistake — for example, because of lighting, camera angle, an unusual but
+innocent movement, or a misread ID. By using this service, you accept this
+risk and agree that a false rejection is not grounds for a refund. If this
+is not an acceptable risk to you, please use a human-proctored option
+instead.
+
+6. RECORDING
+Once you click "Start recording," your webcam and screen are recorded
+continuously for the remainder of your attempt: while you show your face,
+show your ID, perform the requested gestures, sweep your camera around
+your room, and take the exam itself. If you retry a step (for example,
+redoing the gestures), only your final take for that step is kept and
+reviewed — earlier takes are discarded immediately.
+
+7. YOUR ID
+You will be asked to show a valid, legible government-issued photo ID.
+The system reads the birthdate printed on it and compares your face in
+that moment to the photo on the ID. If you do not show an ID, if it is not
+legible, or if your face does not appear to match the ID photo, your
+attempt is rejected. The birthdate read from your ID is used only to
+determine, per credential, when it becomes eligible to be shared with
+employers — it is never displayed on your credential or shared with
+anyone else.
+
+8. WHAT HAPPENS TO YOUR RECORDING
+Your recording is used only for the automated review described above.
+Every clip — webcam and screen, every step, including any discarded retry
+takes — is permanently deleted immediately once that review is complete,
+regardless of whether your attempt is approved or rejected. Vivacada does
+not keep your video for any length of time and does not use it for
+anything other than this one review.
+
+9. WHAT GETS SENT TO VIVACADA
+If your attempt is approved, only the following is sent to Vivacada to
+create your credential: your email, the subject and level tested, your
+exam transcript, your score and feedback, and the birthdate read from your
+ID. Your recording itself is never sent anywhere and is deleted as
+described above.
+
+10. CHECKING YOUR STATUS
+After you submit a passing exam, you'll receive a link to check whether it
+has cleared automated review. This review happens without any further
+action from you. If it is rejected, nothing is sent to Vivacada, and you
+may begin a new, separately-paid attempt at any time.
+
+11. ACCOUNT
+A Vivacada account with the same email you use here is required to view
+your credential once it's approved. If you don't have one yet, your result
+is held until you create one with a matching email.
+
+By checking the box and continuing, you confirm you are 18 or older, you
+have read and understood this document, and you agree to all of the above.

@@ -1,7 +1,6 @@
 'use strict';
-const crypto = require('crypto');
-const { newId } = require('./db');
-const hash = (pw, salt) => crypto.scryptSync(pw, salt, 32).toString('hex');
+const { newId } = require('../../shared/db');
+const { hashPassword } = require('../../shared/auth');
 
 const STARTER_CATALOG = [
   { subject: 'Algorithms & Data Structures', description: 'Sorting, searching, graphs, complexity analysis, and core data-structure trade-offs.', catalogType: 'main' },
@@ -18,9 +17,8 @@ async function seed(db) {
   if (adminEmail && adminPassword) {
     const existing = await users.findOne({ email: adminEmail });
     if (!existing) {
-      const salt = crypto.randomBytes(8).toString('hex');
       await users.insertOne({
-        _id: newId(), email: adminEmail, fullName: 'Admin', passwordHash: salt + ':' + hash(adminPassword, salt),
+        _id: newId(), email: adminEmail, fullName: 'Admin', passwordHash: hashPassword(adminPassword),
         role: 'admin', dataSharing: false, birthdate: null, createdAt: new Date().toISOString()
       });
       console.log('[seed] admin account created: ' + adminEmail);

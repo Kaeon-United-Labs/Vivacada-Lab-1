@@ -6,7 +6,9 @@ The core model is human proctoring: rather than run its own centralized testing 
 
 That model has a cold-start problem: it needs institutions to volunteer before anyone can earn a credential. To break that catch-22, Vivacada also runs an optional, clearly-labeled AI-proctored path directly — paid, adults-only, remote, with no human anywhere in the loop. It's a deliberately lower-trust-tier alternative, not a replacement for the human-proctored model, and every credential it produces is labeled as such everywhere the issuing institution's name appears, so the two are never confused. The bet is that a visible, honestly-labeled body of real credentials gets institutions to notice and volunteer faster than cold outreach alone.
 
-This repository is one codebase with **three run modes**, chosen by an environment variable. They're logically separate services — you'll typically run one process per mode, many testing-kiosk instances and one AI-testing client instance pointed at one aggregator, and possibly several AI-testing worker instances behind that — but they ship together, sharing a `shared/` module for the interview engine and grading so calibration never drifts between the two testing paths.
+The revenue line for all of this is employer access: a separate self-serve portal where employers subscribe to browse opted-in candidate profiles, or fund a balance to run natural-language searches over them.
+
+This repository is one codebase with **four run modes**, chosen by an environment variable. They're logically separate services — you'll typically run one process per mode, many testing-kiosk instances and one AI-testing client instance pointed at one aggregator, possibly several AI-testing worker instances behind that, and one employer-portal instance — but they ship together, sharing a `shared/` module for the interview engine, grading, database connection, password hashing, catalog validation, and the employer-eligibility rule, so none of that logic has to be reimplemented, and possibly drift, across codebases.
 
 ## Quick start
 
@@ -15,7 +17,7 @@ npm install
 cp .env.example .env
 ```
 
-Set `APP_MODE` in `.env` to `testing`, `aggregator`, or `ai-testing`, fill in whatever that mode needs (see below), then:
+Set `APP_MODE` in `.env` to `testing`, `aggregator`, `ai-testing`, or `employer`, fill in whatever that mode needs (see below), then:
 
 ```bash
 npm start
@@ -27,6 +29,7 @@ To run modes side by side locally (e.g. to test a kiosk against a real aggregato
 npm run start:aggregator   # APP_MODE=aggregator, defaults to PORT 4000
 npm run start:testing      # APP_MODE=testing, defaults to PORT 3000
 npm run start:ai-testing   # APP_MODE=ai-testing, defaults to PORT 3100 — needs real MongoDB + S3, see below
+npm run start:employer     # APP_MODE=employer, defaults to PORT 3300 — point it at the same database as your aggregator
 ```
 
 ## `APP_MODE=testing` — the exam kiosk
@@ -70,6 +73,19 @@ A hosted, payment-gated alternative to the kiosk: no institution, no proctor, no
 
 Needs: `MONGODB_URI`, `S3_BUCKET` (+ credentials), a payment provider configured (or `MOCK_MODE=true`), a grading `LLM_*` config (optional — mocked if absent, same as the kiosk), a `VIDEO_MODEL_*` config for real proctoring, and `AGGREGATOR_ENDPOINT` + `INSTITUTION_API_KEY` like any institution.
 
+## `APP_MODE=employer` — the employer self-serve portal
+
+A separate hosted app with its own accounts, its own admin system, and no relationship to aggregator logins — deliberately open to anyone, no manual vetting. It replaces the aggregator's old employer-matching stub entirely (there is no more `/api/briefs`); this app reads and writes the aggregator's database directly rather than calling its API, on the theory that simplicity and clean separation of concerns matter more here than routing every read through another service — the two apps still share the actual privacy-sensitive logic (who's eligible to be shown, catalog validation rules) via `shared/`, so that enforcement isn't reimplemented from memory in two places.
+
+- **Anyone can register**, and every account is issued an API key automatically on signup — usable everywhere the UI is, since this app exposes literally the same JSON API to both. Only one specific account (seeded via `ADMIN_EMAIL`/`ADMIN_PASSWORD`, entirely separate from the aggregator's own admin) has review/suspension privileges; a plain account's key only actually does anything once it's subscribed and/or funded, depending on the feature. Rotating a key invalidates the old one immediately, no grace period.
+- **Two tiers of access.** A recurring subscription unlocks unlimited structured browsing — filter by subject, level, tier, institution — of exactly the same public, eligible profiles the aggregator's own credential pages would show anyone; nothing is exposed here that isn't already public. A funded balance unlocks natural-language AI search on top of that same pool, described below.
+- **Transcript visibility is a strictly two-tier read.** `dataSharing` (account-level) controls whether a profile is findable at all; a credential's own `showTranscript` toggle (unrelated, per-credential) separately controls whether its actual exam content is visible — including to the AI search tool. A profile with sharing on but a given credential's transcript off shows that credential's subject, level, institution, and score, never its content. The AI never sees more than a human browsing the public credential page already could.
+- **AI search cost is set by `TOKEN_PRICING_MODE`.** `flat` charges the same amount for every search, however small or large. `metered` charges the real cost of that search's underlying model usage, marked up by a configurable multiplier, using real rates you set to match your actual model contract — there's no safe default to assume for real-world pricing. Either way, a pre-call ceiling check (using the known input size and a hard output cap in metered mode) is checked against the balance *before* the model is ever called, so a search can never leave a balance negative — no overdraft logic needed anywhere. The candidate pool sent to the model per search is capped and pre-filtered (`MAX_CANDIDATES_PER_QUERY`) so cost stays bounded regardless of how large the eligible pool grows.
+- **Special-catalog submissions are pay-to-propose, not pay-to-list.** Anyone can propose a new special-catalog subject for a fixed, non-refundable fee, reviewed by this app's own admin (not the aggregator's) against the shared validation rules. In practice almost any good-faith submission describing a real subject is approved; rejection is reserved for offensive or nonsensical content, and the fee is kept either way — stated plainly in this app's own terms of use.
+- **Open registration's real trade-off**: anyone, not just legitimate employers, can subscribe and browse real names, subjects, and (where opted in) transcripts. That's accepted deliberately to avoid manual-approval overhead, not overlooked — the counterweight is a broad "no malicious use" terms of service (`legal/terms.txt`, drafted content that still needs real legal review) and a plain admin suspend/reinstate lever on any account.
+
+Needs: `MONGODB_URI` pointed at the same database as your aggregator (or leave both unset in development — they'll share the same local-file fallback automatically), `ADMIN_EMAIL`/`ADMIN_PASSWORD` for this app's own separate admin, a payment provider (or `MOCK_MODE=true`), and `LLM_PROVIDER`/`LLM_MODEL` for real AI search (absent, it falls back to a deterministic keyword-match mock).
+
 ## What's deliberately not here
 
-No ads, no paid test marketplace. Remote AI proctoring exists only as the clearly-labeled, paid, adults-only alternative described above — it is never the default, and a credential earned through it is never displayed as though a human watched it. The employer-matching logic is currently a simple keyword filter, not a scoring/ranking product — the natural next step if that side of the business needs to be worth paying for is splitting it into its own service against the aggregator's data, rather than growing it in place here. Kiosk age verification is proctor-attested, not document-verified; the AI-testing path verifies ID-vs-face automatically instead. A parental-consent flow for minors, beyond the hard employer-matching exclusion, is still out of scope everywhere.
+No ads, no paid test marketplace beyond the special-catalog submission fee described above. Remote AI proctoring exists only as the clearly-labeled, paid, adults-only alternative described in the ai-testing section — it is never the default, and a credential earned through it is never displayed as though a human watched it. Employer matching is no longer a stub — the dedicated portal above replaced it — but its AI search is a single-pass model call over a pre-filtered candidate list, not a tuned ranking system; expect iteration on the pre-filtering and prompt before it's as good as it could be. Kiosk age verification is proctor-attested, not document-verified; the AI-testing path verifies ID-vs-face automatically instead. A parental-consent flow for minors, beyond the hard employer-matching exclusion, is still out of scope everywhere.

@@ -1,0 +1,59 @@
+VIVACADA FOR EMPLOYERS — TERMS OF USE
+
+Last updated: [DATE]
+
+Anyone may create an account on this service; there is no manual approval
+step. Please read this in full — by creating an account you agree to it.
+
+1. WHO CAN USE THIS
+This service is not restricted to hiring purposes. Legitimate uses include
+recruiting and hiring, but also research, journalism, academic study, or
+simple curiosity about what Vivacada credentials look like in aggregate.
+What is not permitted is using this service for any malicious purpose,
+including but not limited to: harassment, stalking, or targeting a specific
+individual; discrimination on any legally protected basis; scraping or
+bulk-exporting data for resale or redistribution; attempting to identify,
+contact, or take action against a candidate outside of a good-faith hiring
+or research process; or any use that violates applicable law.
+
+2. WHAT YOU CAN SEE
+Only credentials whose holder has both made the credential public and
+separately opted in to data sharing are visible here at all, and only once
+that person is old enough (per the birthdate recorded at test time) that
+sharing their data is permitted. A holder's full exam transcript is visible
+only if they have separately turned that on for that specific credential —
+turning on data sharing does not by itself expose transcript content. You
+never see more through this service than a member of the public could see
+by visiting that person's public credential page directly; this service
+makes that same public information searchable and browsable, it does not
+expose anything additional.
+
+3. SUBSCRIPTIONS AND BALANCE
+Browsing requires an active subscription, billed on a recurring basis until
+canceled. AI-assisted natural-language search is billed separately against
+a balance you fund in advance; a search will never be allowed to proceed if
+it might cost more than your remaining balance, so your balance can never
+go negative. Subscription charges and balance funds are not refundable
+except as required by law.
+
+4. SPECIAL-CATALOG TEST SUBMISSIONS
+You may propose a new subject for the special catalog for a fixed fee,
+charged at the time you submit. This fee is not refunded if your submission
+is not approved, regardless of the reason. In practice, a good-faith
+submission describing a real subject is very likely to be approved,
+reflecting genuine subject-matter interest, however niche; rejection is
+reserved for content that is offensive or does not describe a coherent
+subject to test.
+
+5. YOUR API KEY
+Your account is issued an API key automatically, usable for programmatic
+access to every feature also available in this site's interface. You are
+responsible for keeping it confidential. You may rotate it at any time from
+your account settings; rotating immediately invalidates the previous key.
+
+6. ENFORCEMENT
+Vivacada may suspend or terminate any account for violating these terms,
+including the prohibition on malicious use in Section 1, without refunding
+any subscription payment, balance, or submission fee.
+
+By creating an account, you confirm you have read and agree to the above.

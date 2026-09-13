@@ -7,7 +7,8 @@
     "start": "node server.js",
     "start:testing": "cross-env APP_MODE=testing node server.js",
     "start:aggregator": "cross-env APP_MODE=aggregator node server.js",
-    "start:ai-testing": "cross-env APP_MODE=ai-testing node server.js"
+    "start:ai-testing": "cross-env APP_MODE=ai-testing node server.js",
+    "start:employer": "cross-env APP_MODE=employer node server.js"
   },
   "engines": { "node": ">=18" },
   "dependencies": {

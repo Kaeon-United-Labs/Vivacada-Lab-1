@@ -3,12 +3,13 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const path = require('path');
-const { connect, newId } = require('./src/db');
+const { connect, newId } = require('../shared/db');
+const { validateCatalogInput, assertNoDuplicateSubject } = require('../shared/catalogValidation');
+const { hashPassword, verifyPassword } = require('../shared/auth');
 const { seed } = require('./src/seed');
 
 const LEVELS = ['beginner', 'intermediate', 'junior', 'senior', 'expert'];
 const now = () => new Date().toISOString();
-const hash = (pw, salt) => crypto.scryptSync(pw, salt, 32).toString('hex');
 const slug = () => crypto.randomBytes(6).toString('base64url');
 const RATE_LIMIT_PER_DAY = parseInt(process.env.RATE_LIMIT_PER_DAY, 10) || 500;
 // A single optional label per institution, e.g. "AI-Proctor" — distinguishes
@@ -85,22 +86,7 @@ async function requireInstitutionAuthOnly(req, res, next) {
   req.institution = inst;
   next();
 }
-function requireEmployer(req, res, next) {
-  const auth = req.get('authorization') || '';
-  const key = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  const expected = process.env.EMPLOYER_API_KEY;
-  // Placeholder auth: a single shared key. Real employer accounts/billing TBD.
-  if (!expected || key !== expected) return res.status(401).json({ error: 'Missing or invalid employer API key.' });
-  next();
-}
 function publicUser(u) { return { email: u.email, fullName: u.fullName || null }; }
-function age(birthdate) {
-  if (!birthdate) return null;
-  const b = new Date(birthdate), d = new Date();
-  let a = d.getFullYear() - b.getFullYear();
-  if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) a--;
-  return a;
-}
 // birthdate is proctor-witnessed, per-credential metadata recorded solely to
 // gate employer matching until the holder turns 18 — it is never returned in
 // any API response, including the credential owner's own dashboard.
@@ -154,8 +140,7 @@ app.post('/api/accounts', wrap(async (req, res) => {
   const normalizedEmail = email.toLowerCase();
   const existing = await db.collection('users').findOne({ email: normalizedEmail });
   if (existing) return res.status(409).json({ error: 'An account with this email already exists. Log in instead.' });
-  const saltStr = crypto.randomBytes(8).toString('hex');
-  const user = { _id: newId(), email: normalizedEmail, fullName: cleanName, passwordHash: saltStr + ':' + hash(password, saltStr), role: 'student', dataSharing: false, createdAt: now() };
+  const user = { _id: newId(), email: normalizedEmail, fullName: cleanName, passwordHash: hashPassword(password), role: 'student', dataSharing: false, createdAt: now() };
   await db.collection('users').insertOne(user);
   const token = crypto.randomBytes(24).toString('base64url');
   await db.collection('sessions').insertOne({ _id: newId(), token, userId: user._id, createdAt: now() });
@@ -168,8 +153,7 @@ app.post('/api/accounts/login', wrap(async (req, res) => {
   const { email, password } = req.body || {};
   const user = await db.collection('users').findOne({ email: (email || '').toLowerCase() });
   if (!user) return res.status(401).json({ error: 'Wrong email or password.' });
-  const [saltStr, h] = user.passwordHash.split(':');
-  if (hash(password || '', saltStr) !== h) return res.status(401).json({ error: 'Wrong email or password.' });
+  if (!verifyPassword(password || '', user.passwordHash)) return res.status(401).json({ error: 'Wrong email or password.' });
   const token = crypto.randomBytes(24).toString('base64url');
   await db.collection('sessions').insertOne({ _id: newId(), token, userId: user._id, createdAt: now() });
   res.cookie('sid', token, { httpOnly: true, sameSite: 'lax', maxAge: 30 * 864e5 });
@@ -251,15 +235,10 @@ app.get('/api/catalog', wrap(async (req, res) => {
 }));
 
 app.post('/api/catalog', requireAdminAuth, wrap(async (req, res) => {
-  const { subject, description, catalogType } = req.body || {};
-  if (!subject || !subject.trim()) return res.status(400).json({ error: 'Subject name required.' });
-  const type = catalogType === 'special' ? 'special' : 'main';
-  const desc = (description || '').trim();
-  if (type === 'special' && !desc) return res.status(400).json({ error: 'A special-catalog subject needs a description — the exam is generated entirely from it.' });
-  const clean = subject.trim();
-  const dup = await db.collection('catalogEntries').findOne({ subject: clean });
-  if (dup) return res.status(409).json({ error: 'A subject with this name already exists.' });
-  const entry = { _id: newId(), subject: clean, description: desc, catalogType: type, createdAt: now() };
+  let clean;
+  try { clean = validateCatalogInput(req.body || {}); } catch (e) { return res.status(400).json({ error: e.message }); }
+  try { await assertNoDuplicateSubject(db, clean.subject); } catch (e) { return res.status(409).json({ error: e.message }); }
+  const entry = { _id: newId(), ...clean, createdAt: now() };
   await db.collection('catalogEntries').insertOne(entry);
   res.json({ entry });
 }));
@@ -410,36 +389,6 @@ app.get('/api/badge/:slug.svg', wrap(async (req, res) => {
 }));
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-
-// ---------------- employer matching ----------------
-app.post('/api/briefs', requireEmployer, wrap(async (req, res) => {
-  const { text, subject, level } = req.body || {};
-  const creds = await db.collection('credentials').find({ visibility: 'public' }).toArray();
-  const matches = [];
-  for (const c of creds) {
-    const holder = await db.collection('users').findOne({ _id: c.userId });
-    if (!holder || !holder.dataSharing) continue;
-    // Age is computed fresh against the stored birthdate every time this runs,
-    // not frozen at the credential's issue date — a credential earned at 16
-    // becomes eligible the moment today's date implies the holder has turned
-    // 18, entirely automatically, without any code re-evaluating or unlocking
-    // it. The birthdate isn't a permanent lock; it's an audit trail against
-    // lying about age at test time, and the gate below is just "is this
-    // person 18 right now," recomputed live. A missing/unparseable birthdate
-    // is treated as unknown, not as adult, so it's excluded rather than
-    // assumed safe.
-    const a = age(c.birthdate);
-    if (a === null || a < 18) continue;
-    const subj = c.testRef.subject;
-    const lvl = c.testRef.level || c.testRef.derivedLevel || null;
-    const levelMatch = !level || lvl === level;
-    const subjMatch = !subject || (subj || '').toLowerCase().includes(subject.toLowerCase());
-    const textMatch = !text || (subj || '').toLowerCase().includes(text.toLowerCase());
-    const rationale = lvl ? `Holds a ${lvl} credential in ${subj}.` : `Holds a credential in ${subj}.`;
-    if (levelMatch && (subjMatch || textMatch)) matches.push({ credentialSlug: c.publicSlug, subject: subj, level: lvl, tier: c.tier, institutionName: c.institutionName, rationale });
-  }
-  res.json({ matches: matches.slice(0, 25) });
-}));
 
 // ---------------- SPA fallback (hash-routed client) ----------------
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

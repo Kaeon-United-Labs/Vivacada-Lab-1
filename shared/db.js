@@ -1,29 +1,44 @@
 'use strict';
+// Shared by any app that needs Vivacada's primary data store (currently the
+// aggregator and the employer app, which reads/writes this same database
+// directly rather than through the aggregator's API). Real MongoDB when
+// MONGODB_URI is set; otherwise an in-memory, local-file-persisted mock —
+// note that with no MONGODB_URI, every app using this module falls back to
+// the SAME file (repo-root data/db.json), so "same database" holds even in
+// zero-config local demo mode, not just in a real deployment.
 const crypto = require('crypto');
 const newId = () => crypto.randomBytes(12).toString('hex');
 
 function matches(doc, query) {
   return Object.entries(query || {}).every(([k, v]) => {
+    const docVal = getPath(doc, k);
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return Object.entries(v).every(([op, val]) => {
-        if (op === '$in') return val.includes(doc[k]);
-        if (op === '$ne') return doc[k] !== val;
-        if (op === '$exists') return val ? doc[k] !== undefined : doc[k] === undefined;
-        if (op === '$gt') return doc[k] > val;
-        if (op === '$gte') return doc[k] >= val;
-        if (op === '$lt') return doc[k] < val;
-        if (op === '$lte') return doc[k] <= val;
-        if (op === '$regex') return new RegExp(val, 'i').test(doc[k] || '');
+        if (op === '$in') return val.includes(docVal);
+        if (op === '$ne') return docVal !== val;
+        if (op === '$exists') return val ? docVal !== undefined : docVal === undefined;
+        if (op === '$gt') return docVal > val;
+        if (op === '$gte') return docVal >= val;
+        if (op === '$lt') return docVal < val;
+        if (op === '$lte') return docVal <= val;
+        if (op === '$regex') return new RegExp(val, 'i').test(docVal || '');
         return true;
       });
     }
-    return doc[k] === v;
+    return docVal === v;
   });
 }
+function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function setPath(obj, path, val) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) { cur[parts[i]] = cur[parts[i]] || {}; cur = cur[parts[i]]; }
+  cur[parts[parts.length - 1]] = val;
+}
 function applyUpdate(doc, update) {
-  if (update.$set) Object.assign(doc, update.$set);
-  if (update.$inc) for (const [k, v] of Object.entries(update.$inc)) doc[k] = (doc[k] || 0) + v;
-  if (update.$push) for (const [k, v] of Object.entries(update.$push)) (doc[k] = doc[k] || []).push(v);
+  if (update.$set) for (const [k, v] of Object.entries(update.$set)) setPath(doc, k, v);
+  if (update.$inc) for (const [k, v] of Object.entries(update.$inc)) setPath(doc, k, (getPath(doc, k) || 0) + v);
+  if (update.$push) for (const [k, v] of Object.entries(update.$push)) { const arr = getPath(doc, k) || []; arr.push(v); setPath(doc, k, arr); }
 }
 
 class MockCollection {
@@ -127,6 +142,8 @@ async function connect() {
       const { MongoClient, ObjectId } = require('mongodb');
       const client = new MongoClient(uri);
       await client.connect();
+      // Default DB name is shared on purpose — any app using this module with
+      // no MONGODB_DB override connects to the same database by convention.
       const db = client.db(process.env.MONGODB_DB || 'vivacada_aggregator');
       console.log('[db] connected to MongoDB');
       return wrapMongo(db, ObjectId);
